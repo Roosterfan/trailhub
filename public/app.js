@@ -1,51 +1,27 @@
-// Sample challenges data - ALL METRIC (km, not miles)
-const challenges = [
-    {
-        id: 1,
-        name: "Desert Trail Challenge",
-        km: 80,
-        daysLeft: 14,
-        participants: 234,
-        progress: 65,
-        description: "Complete 80km virtual hike through scenic desert trails. Support wildlife conservation."
-    },
-    {
-        id: 2,
-        name: "Mountain Quest 2025",
-        km: 160,
-        daysLeft: 30,
-        participants: 567,
-        progress: 42,
-        description: "Epic 160km mountain challenge. Raise funds for rural healthcare."
-    },
-    {
-        id: 3,
-        name: "Urban Trail Sprint",
-        km: 40,
-        daysLeft: 7,
-        participants: 189,
-        progress: 85,
-        description: "Quick 40km city trail challenge. Perfect for beginners!"
-    },
-    {
-        id: 4,
-        name: "Coast to Coast Marathon",
-        km: 240,
-        daysLeft: 60,
-        participants: 432,
-        progress: 28,
-        description: "Ultimate 240km challenge across beautiful coastlines."
-    }
-];
+// Load challenges from API
+document.addEventListener('DOMContentLoaded', loadChallengesFromAPI);
 
-// Load challenges on page load
-document.addEventListener('DOMContentLoaded', loadChallenges);
-
-function loadChallenges() {
+function loadChallengesFromAPI() {
     const container = document.getElementById('challengesContainer');
-    
     if (!container) return;
     
+    container.innerHTML = '<div class="loading">Loading challenges...</div>';
+    
+    // Fetch from our backend API
+    fetch('/api/challenges')
+        .then(response => response.json())
+        .then(result => {
+            if (!result.success) throw new Error('Failed to load challenges');
+            displayChallenges(result.data);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            container.innerHTML = '<div class="loading" style="color: red;">Failed to load challenges</div>';
+        });
+}
+
+function displayChallenges(challenges) {
+    const container = document.getElementById('challengesContainer');
     container.innerHTML = '';
     
     challenges.forEach(challenge => {
@@ -70,9 +46,21 @@ function loadChallenges() {
                 <p style="font-size: 0.85rem; color: #999; margin-bottom: 1rem;">
                     ${challenge.progress}% complete
                 </p>
-                <button class="btn-join">Join Challenge</button>
+                <button class="btn-join" onclick="joinChallenge(${challenge.id})">Join Challenge</button>
             </div>
         `;
         container.appendChild(card);
     });
+}
+
+// Join a challenge
+function joinChallenge(challengeId) {
+    fetch(`/api/challenges/${challengeId}/join`, { method: 'POST' })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                alert(`✅ ${result.message}`);
+            }
+        })
+        .catch(error => console.error('Error:', error));
 }
