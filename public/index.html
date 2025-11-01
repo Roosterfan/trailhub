@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TrailHub 🥾</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: 'Segoe UI',sans-serif; background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); min-height: 100vh; padding: 0; margin: 0; }
+    .container { background: #fff; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); padding: 40px 25px; max-width: 500px; margin: 40px auto 0 auto; }
+    .main-container { background: #fff; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); max-width: 1200px; margin: 40px auto 0 auto; }
+    h1, h2, h3 { color: #333; margin-bottom: 15px; }
+    h1 { font-size: 28px; text-align: center; }
+    .dashboard-header { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); color: #fff; padding: 25px; border-radius: 13px 13px 0 0; display:flex; justify-content:space-between; align-items:center; }
+    .user-info { text-align: right; font-size: 15px; }
+    .nav-tabs { display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 2px solid #ececec; flex-wrap:wrap; }
+    .nav-tab { padding: 11px 20px; border:none; background: none; color: #767676; font-weight:600; border-bottom:2.5px solid transparent; cursor:pointer; font-size:15px; }
+    .nav-tab.active { color: #667eea; border-bottom: 2.5px solid #667eea; }
+    .content-section { display:none; }
+    .content-section.active { display:block; }
+    .challenge-card { background: #f9f9fc; border-radius:12px; border:2px solid #e9ecef; padding:20px; margin-bottom:20px; }
+    .progress-bar { background:#ececec; border-radius:9px; height:12px; margin:10px 0; overflow:hidden; }
+    .progress-fill { background:#667eea; height:100%; }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:15px; }
+    label { display:block; font-weight:500; margin-bottom:7px; color:#666; }
+    input, textarea, select { width:100%; padding:10px; font-size:16px; border-radius:8px; border:2px solid #e0e0e0; }
+    input:focus, textarea:focus, select:focus { outline:none; border-color:#667eea; }
+    button { padding:12px; font-weight:600; border-radius:8px; border:none; background:#667eea; color:#fff; cursor:pointer; }
+    button:hover { background:#5568d3; }
+    .delete-btn { background:#dc3545 !important; }
+    .message { position:fixed; top:18px; right:18px; min-width:280px; padding:14px; border-radius:7px; display:none; z-index:9999; }
+    .message.success { background:#d4edda; color:#155724; display:block; }
+    .message.error { background:#f8d7da; color:#721c24; display:block; }
+    #emojiPopup { position:absolute; background:#fff; border:1px solid #ccc; padding:8px; border-radius:7px; z-index:1000; }
+    #emojiPopup span { font-size:24px; padding:3px; cursor:pointer; margin:2px; display:inline-block; }
+    #emojiPopup span:hover { background: #f0f0f0; border-radius:4px; }
+    @media (max-width:900px){.dashboard-header{flex-direction:column;align-items:flex-start;}.main-container{padding:0;}.container{padding:30px 8px;}}
+  </style>
+</head>
+<body>
+  <!-- AUTH -->
+  <div id="authContainer" class="container">
+    <div style="text-align:center;font-size:48px;margin-bottom:20px;">🥾</div>
+    <h1>TrailHub 👟</h1>
+    <div style="display: flex; gap: 10px; margin-bottom: 28px;">
+      <button onclick="showTab('signup')" id="signupBtn">Sign Up</button>
+      <button onclick="showTab('login')" id="loginBtn" style="background:#667eea;">Login</button>
+    </div>
+    <div id="signup" style="display:block;">
+      <form onsubmit="handleSignup(event)">
+        <div style="margin-bottom:18px;"><label>Name</label><input type="text" id="signupName" required></div>
+        <div style="margin-bottom:18px;"><label>Email</label><input type="email" id="signupEmail" required></div>
+        <div style="margin-bottom:18px;"><label>Password</label><input type="password" id="signupPassword" required></div>
+        <button type="submit">Create Account</button>
+      </form>
+    </div>
+    <div id="login" style="display:none;">
+      <form onsubmit="handleLogin(event)">
+        <div style="margin-bottom:18px;"><label>Email</label><input type="email" id="loginEmail" required></div>
+        <div style="margin-bottom:18px;"><label>Password</label><input type="password" id="loginPassword" required></div>
+        <div style="margin-bottom:18px;"><label>Admin Password (optional)</label><input type="password" id="adminPassword"></div>
+        <button type="submit">Login</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboardContainer" class="main-container" style="display:none;">
+    <div class="dashboard-header">
+      <div><h1>🥾 TrailHub 👟</h1></div>
+      <div class="user-info">
+        <p id="userGreeting">Welcome!</p>
+        <p><strong id="totalSteps">0</strong> steps</p>
+        <p><strong id="totalKm">0</strong> km</p>
+        <button style="width:100px;padding:8px;font-size:14px;background:#dc3545;margin-top:10px;" onclick="handleLogout()">Logout</button>
+      </div>
+    </div>
+    <div class="dashboard-content" style="padding:26px;">
+      <div class="nav-tabs">
+        <button class="nav-tab active" onclick="switchTab('all-challenges')">🔥 Challenges</button>
+        <button class="nav-tab" onclick="switchTab('my-challenges')">✓ Progress</button>
+        <button class="nav-tab" onclick="switchTab('leaderboard')">🏆 Leaderboard</button>
+        <button class="nav-tab" id="adminTabBtn" style="display:none;" onclick="switchTab('admin-panel')">👑 Admin</button>
+        <button class="nav-tab" onclick="switchTab('discussion')">💬 Chat</button>
+      </div>
+
+      <div id="all-challenges" class="content-section active">
+        <h2>🔥 Available Challenges</h2>
+        <div id="challengesList"></div>
+      </div>
+      <div id="my-challenges" class="content-section">
+        <h2>✓ Track Progress</h2>
+        <p style="color:#666;font-size:14px;margin-bottom:20px;">1km ≈ 1,250 steps</p>
+        <div id="myJoinedChallenges"></div>
+      </div>
+      <div id="leaderboard" class="content-section">
+        <h2>🏆 Leaderboard</h2>
+        <div id="leaderboardList"></div>
+      </div>
+      <div id="admin-panel" class="content-section">
+        <h2>👑 Admin Panel</h2>
+        <div style="background:#fff3cd;border:2px solid #ffc107;border-radius:12px;padding:17px;margin-bottom:18px;">
+          <h3>📸 Verification Queue</h3>
+          <div id="verificationQueueList"></div>
+        </div>
+        <div style="background:#f0f8ff;border:2px solid #667eea;border-radius:12px;padding:17px;margin-bottom:18px;">
+          <h3>➕ Create Challenge</h3>
+          <form onsubmit="handleCreateChallenge(event)">
+            <div style="margin-bottom:15px;"><label>Name</label><input type="text" id="newChallengeName" required></div>
+            <div class="form-row">
+              <div><label>Distance (km)</label><input type="number" id="newChallengeDistance" min="0.1" step="0.1" required></div>
+              <div><label>Difficulty</label><select id="newChallengeDifficulty" required><option>Easy</option><option>Medium</option><option>Hard</option></select></div>
+            </div>
+            <div style="margin-bottom:15px;"><label>Reward Points</label><input type="number" id="newChallengeReward" min="10" value="100"></div>
+            <button type="submit">🆕 Create</button>
+          </form>
+        </div>
+        <div style="background:#ffe5e5;border:2px solid #dc3545;border-radius:12px;padding:17px;">
+          <h3>🗑️ Delete Challenge</h3>
+          <div id="adminChallengesList"></div>
+        </div>
+      </div>
+      <div id="discussion" class="content-section">
+        <h2>💬 Community Chat</h2>
+        <div style="background:#fffbe8;border:2px solid #667eea;border-radius:12px;padding:17px;margin-bottom:20px;">
+          <h3>Share Your Hike 🏔️</h3>
+          <div style="margin-bottom:15px;">
+            <label>Message</label>
+            <div style="display:flex;gap:8px;">
+              <textarea id="postMessage" placeholder="Share your experience!" rows="3" required style="flex:1;"></textarea>
+              <button type="button" id="emojiBtn" style="width:51px;padding:8px;font-size:23px;background:#667eea;color:#fff;border:none;border-radius:7px;cursor:pointer;height:fit-content;">😀</button>
+            </div>
+          </div>
+          <div id="emojiPopup" style="display:none;"></div>
+          <div style="margin-bottom:12px;"><label>Photo</label><input type="file" id="postImage" accept="image/*"></div>
+          <button onclick="postToDiscussion()">Post</button>
+        </div>
+        <h3>Recent Posts</h3>
+        <div id="discussionPosts"></div>
+      </div>
+    </div>
+  </div>
+  <div class="message" id="message"></div>
+
+  <script>
+    let currentUser = null, currentUserEmail = null, currentUserIsAdmin = false, adminPassword = '';
+
+    const emojis = ["😀","😎","🏔️","🔥","🥾","👟","🎉","😃","👍","🤩","🏆","❤️","🌟","⛰️","🏃"];
+    document.getElementById('emojiBtn').onclick = function(e){
+      let popup = document.getElementById('emojiPopup');
+      popup.style.display='block';
+      popup.style.left=(e.clientX || 100)+'px';
+      popup.style.top=((e.clientY || 100)+20)+'px';
+      popup.innerHTML=emojis.map(emo=>`<span onclick="insertEmoji('${emo}')">${emo}</span>`).join('');
+    };
+    window.insertEmoji=function(emo){
+      let textarea = document.getElementById('postMessage');
+      textarea.value+=emo;
+      document.getElementById('emojiPopup').style.display='none';
+    };
+    document.body.addEventListener('click',function(e){
+      if(!e.target.closest('#emojiBtn') && !e.target.closest('#emojiPopup')) {
+        document.getElementById('emojiPopup').style.display='none';
+      }
+    });
+
+    function showTab(tabName){
+      document.getElementById('signup').style.display = tabName === 'signup' ? 'block' : 'none';
+      document.getElementById('login').style.display = tabName === 'login' ? 'block' : 'none';
+      document.getElementById('signupBtn').style.background = tabName === 'signup' ? '#667eea' : '#e9ecef';
+      document.getElementById('signupBtn').style.color = tabName === 'signup' ? 'white' : '#666';
+      document.getElementById('loginBtn').style.background = tabName === 'login' ? '#667eea' : '#e9ecef';
+      document.getElementById('loginBtn').style.color = tabName === 'login' ? 'white' : '#666';
+    }
+
+    function switchTab(tabName){
+      document.querySelectorAll('.content-section').forEach(el=>el.classList.remove('active'));
+      document.getElementById(tabName).classList.add('active');
+      document.querySelectorAll('.nav-tab').forEach(el=>el.classList.remove('active'));
+      event.target.classList.add('active');
+      if(tabName==='all-challenges')renderAllChallenges();
+      else if(tabName==='my-challenges')renderMyChallenges();
+      else if(tabName==='leaderboard')renderLeaderboard();
+      else if(tabName==='admin-panel')renderAdminPanel();
+      else if(tabName==='discussion')renderDiscussion();
+    }
+    function renderAllChallenges(){
+      fetch('/api/challenges').then(r=>r.json()).then(data=>{
+        const container=document.getElementById('challengesList');
+        const challenges=data.challenges||[];
+        container.innerHTML=challenges.map(ch=>`
+          <div class="challenge-card">
+            <h3>${ch.name}</h3>
+            <p style="font-size:14px;color:#666;margin-bottom:10px;">${ch.distance}km | ${ch.difficulty}</p>
+            <button onclick="joinChallenge(${ch.id})">🎯 JOIN</button>
+          </div>
+        `).join('');
+      });
+    }
+    function joinChallenge(id){
+      if(!currentUserEmail){showMessage('❌ Not logged in','error');return;}
+      fetch('/api/challenges/join',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:currentUserEmail,challengeId:id})})
+      .then(r=>r.json()).then(data=>{
+        if(data.success){showMessage('✅ Joined!','success');renderMyChallenges();}
+        else showMessage('❌ '+data.error,'error');
+      });
+    }
+    function renderMyChallenges(){
+      fetch(`/api/user/${currentUserEmail}/challenges`).then(r=>r.json()).then(data=>{
+        const joined=data.joinedChallenges||[];
+        const container=document.getElementById('myJoinedChallenges');
+        if(joined.length===0){container.innerHTML='<p style="text-align:center;color:#999;">No challenges joined</p>';return;}
+        container.innerHTML=joined.map(ch=>`
+          <div class="challenge-card">
+            <h3>${ch.name}</h3>
+            <div style="margin:15px 0;">
+              <label style="font-size:14px;">📍 KM:</label><input type="number" id="km-${ch.id}" placeholder="0" min="0" step="0.1" style="width:48%;display:inline-block;margin-right:2%;">
+              <label style="font-size:14px;margin-left:50%;">👟 Steps:</label><input type="number" id="steps-${ch.id}" placeholder="0" min="0" style="width:48%;display:inline-block;">
+            </div>
+            <div style="margin:10px 0;"><label>📸 Photo</label><input type="file" id="proof-${ch.id}" accept="image/*"></div>
+            <button onclick="logProgress(${ch.id})" style="background:#28a745;">📊 Log</button>
+            <div style="margin-top:10px;font-size:12px;">
+              <p>KM: ${ch.kmCompleted}/${ch.distance}</p>
+              <div class="progress-bar"><div class="progress-fill" style="width:${ch.percentComplete}%;"></div></div>
+              <p>Steps: ${ch.stepsCompleted}/${ch.stepsTarget}</p>
+              <div class="progress-bar"><div class="progress-fill" style="width:${ch.percentSteps}%;"></div></div>
+            </div>
+          </div>
+        `).join('');
+      });
+    }
+    function logProgress(cId){
+      const km = parseFloat(document.getElementById(`km-${cId}`).value) || 0;
+      const steps = parseInt(document.getElementById(`steps-${cId}`).value) || 0;
+      const proof = document.getElementById(`proof-${cId}`);
+      if(km<=0 && steps<=0){showMessage('Enter km or steps','error');return;}
+      let proofImage = null;
+      if(proof.files.length > 0){
+        const reader = new FileReader();
+        reader.onload = (e) => submitLog(cId,km,steps,e.target.result);
+        reader.readAsDataURL(proof.files[0]);
+      } else submitLog(cId,km,steps,null);
+    }
+    function submitLog(cId,km,steps,proof){
+      fetch('/api/challenges/log-distance',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:currentUserEmail,challengeId:cId,kmCompleted:km,stepsCompleted:steps,proofImage:proof})})
+      .then(r=>r.json()).then(d=>{
+        if(d.success){showMessage(d.message,'success');renderMyChallenges();updateHeader();}
+        else showMessage('❌ '+d.error,'error');
+      });
+    }
+    function renderLeaderboard(){
+      fetch('/api/leaderboard').then(r=>r.json()).then(data=>{
+        const container=document.getElementById('leaderboardList');
+        const lb=data.leaderboard||[];
+        container.innerHTML=lb.map((u,i)=>`
+          <div style="background:#f8f9fa;padding:15px;margin-bottom:10px;border-radius:8px;display:flex;justify-content:space-between;">
+            <div><strong>#${i+1}</strong> ${u.name}</div>
+            <div>👟 ${u.totalSteps} | 🚶 ${u.totalKm}km | 🏅 ${u.points}pts</div>
+          </div>
+        `).join('');
+      });
+    }
+    function renderAdminPanel(){
+      if(!currentUserIsAdmin){document.getElementById('admin-panel').innerHTML='<p style="color:red;">❌ Admin access required</p>';return;}
+      fetch(`/api/verification-queue?adminPassword=${adminPassword}`).then(r=>r.json()).then(data=>{
+        const q=data.queue||[];
+        const vq=document.getElementById('verificationQueueList');
+        vq.innerHTML = q.filter(v=>v.status==='pending').map(v=>`
+          <div style="background:#fff;padding:15px;margin-bottom:10px;border-radius:8px;border:2px solid #ffc107;">
+            <p><strong>${v.email}</strong> - ${v.km}km (${v.steps} steps)</p>
+            ${v.proofImage ? `<img src="${v.proofImage}" style="max-width:100%;max-height:150px;border-radius:5px;margin:10px 0;">` : ''}
+            <div style="display:flex;gap:10px;margin-top:10px;">
+              <button onclick="approveVerification(${v.id})" style="background:#28a745;width:48%;">✅ Approve</button>
+              <button onclick="rejectVerification(${v.id})" style="background:#dc3545;width:48%;">❌ Reject</button>
+            </div>
+          </div>
+        `).join('')||'<p style="color:#666;">✅ All verified!</p>';
+      });
+      fetch('/api/challenges').then(r=>r.json()).then(data=>{
+        const ac=document.getElementById('adminChallengesList');
+        ac.innerHTML = (data.challenges||[]).map(ch=>`
+          <div style="background:#fff;padding:15px;margin-bottom:10px;border-radius:8px;display:flex;justify-content:space-between;align-items:center; border:2px solid #dc3545;">
+            <div><strong>${ch.name}</strong><br><small style="color:#666;">${ch.distance}km | ${ch.difficulty}</small></div>
+            <button onclick="deleteChallenge(${ch.id})" style="background:#dc3545;width:100px;padding:8px;">🗑️ Delete</button>
+          </div>
+        `).join('');
+      });
+    }
+    function approveVerification(vId){
+      fetch('/api/verification/approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({verificationId:vId,adminPassword})})
+      .then(r=>r.json()).then(d=>{if(d.success){showMessage('✅ Approved','success');renderAdminPanel();}});
+    }
+    function rejectVerification(vId){
+      if(!confirm('Reject?'))return;
+      fetch('/api/verification/reject',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({verificationId:vId,adminPassword})})
+      .then(r=>r.json()).then(d=>{if(d.success){showMessage('❌ Rejected','success');renderAdminPanel();}});
+    }
+    function handleCreateChallenge(e){
+      e.preventDefault();
+      const name=document.getElementById('newChallengeName').value;
+      const dist=document.getElementById('newChallengeDistance').value;
+      const diff=document.getElementById('newChallengeDifficulty').value;
+      const reward=document.getElementById('newChallengeReward').value;
+      fetch('/api/challenges/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:currentUserEmail,name,distance:dist,difficulty:diff,reward,adminPassword})})
+      .then(r=>r.json()).then(d=>{
+        if(d.success){showMessage('✅ Created','success');document.getElementById('newChallengeName').value='';renderAllChallenges();renderAdminPanel();}
+        else showMessage('❌ '+d.error,'error');
+      });
+    }
+    function deleteChallenge(cId){
+      if(!confirm('Delete this challenge?'))return;
+      fetch('/api/challenges/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({challengeId:cId,adminPassword})})
+      .then(r=>r.json()).then(d=>{
+        if(d.success){showMessage('🗑️ Deleted','success');renderAllChallenges();renderAdminPanel();}
+      });
+    }
+    function postToDiscussion(){
+      const msg=document.getElementById('postMessage').value.trim();
+      const img=document.getElementById('postImage');
+      if(!msg){showMessage('Enter a message','error');return;}
+      if(img.files.length>0){
+        const r=new FileReader();
+        r.onload=(e)=>sendPost(msg,e.target.result);r.readAsDataURL(img.files[0]);
+      }else sendPost(msg,null);
+    }
+    function sendPost(msg,img){
+      fetch('/api/discussions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:currentUserEmail,name:currentUser.name,message:msg,image:img})})
+      .then(r=>r.json()).then(d=>{
+        if(d.success){showMessage('✅ Posted','success');document.getElementById('postMessage').value='';document.getElementById('postImage').value='';renderDiscussion();}
+      });
+    }
+    function renderDiscussion(){
+      fetch('/api/discussions').then(r=>r.json()).then(data=>{
+        const c=document.getElementById('discussionPosts');
+        if(!data.discussions||data.discussions.length===0){c.innerHTML='<p style="text-align:center;color:#999;">No posts yet!</p>';return;}
+        c.innerHTML=data.discussions.map(p=>`
+          <div style="background:#f8f9fa;border-radius:8px;padding:15px;margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+              <div>
+                <strong style="font-size:16px;">${p.name}</strong>
+                <br>
+                <small style="color:#999;">${new Date(p.timestamp).toLocaleString()}</small>
+              </div>
+              <div class="post-controls">
+                ${currentUserIsAdmin&&p.image?`<button onclick="deleteImageOnly(${p.id})" style="background:#ff9800;">🗑️ Image</button>`:''}
+                ${currentUserIsAdmin?`<button onclick="deletePost(${p.id})" style="background:#dc3545;">🗑️ Post</button>`:''}
+              </div>
+            </div>
+            ${p.image?`<img src="${p.image}" style="max-width:100%;max-height:200px;border-radius:5px;margin-bottom:10px;">`:''}
+            <p style="color:#333;margin:0;">${p.message}</p>
+          </div>
+        `).join('');
+      });
+    }
+    function deleteImageOnly(postId){
+      fetch('/api/discussions/delete-image',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({postId,adminPassword})
+      })
+      .then(r=>r.json())
+      .then(d=>{if(d.success){showMessage('🗑️ Image removed','success');renderDiscussion();}
+      else showMessage('❌ '+d.error,'error');});
+    }
+    function deletePost(postId){
+      if(!confirm('Delete this post?'))return;
+      fetch('/api/discussions/delete',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({postId,adminPassword})
+      })
+      .then(r=>r.json())
+      .then(d=>{if(d.success){showMessage('🗑️ Post deleted','success');renderDiscussion();}
+      else showMessage('❌ '+d.error,'error');});
+    }
+    async function handleSignup(e){
+      e.preventDefault();
+      const r = await fetch('/api/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('signupEmail').value,name:document.getElementById('signupName').value,password:document.getElementById('signupPassword').value})});
+      const d = await r.json();
+      if(r.ok){showMessage('✅ Account created! Login now.','success');showTab('login');}
+      else showMessage('❌ '+d.error,'error');
+    }
+    async function handleLogin(e){
+      e.preventDefault();
+      const r = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('loginEmail').value,password:document.getElementById('loginPassword').value,adminPassword:document.getElementById('adminPassword').value||undefined})});
+      const d = await r.json();
+      if(r.ok){
+        currentUser=d.user;
+        currentUserEmail=document.getElementById('loginEmail').value;
+        currentUserIsAdmin=d.user.isAdmin;
+        adminPassword=document.getElementById('adminPassword').value;
+        showDashboard();
+      } else showMessage('❌ '+d.error,'error');
+    }
+    function showDashboard(){
+      document.getElementById('authContainer').style.display = 'none';
+      document.getElementById('dashboardContainer').style.display = 'block';
+      if(currentUserIsAdmin)document.getElementById('adminTabBtn').style.display='block';
+      else document.getElementById('adminTabBtn').style.display='none';
+      updateHeader();renderAllChallenges();
+    }
+    function updateHeader(){
+      document.getElementById('userGreeting').textContent = `Welcome, ${currentUser.name}!`;
+      document.getElementById('totalSteps').textContent = (currentUser.totalSteps||0).toLocaleString();
+      document.getElementById('totalKm').textContent = (currentUser.totalKm||0).toFixed(2);
+    }
+    function handleLogout(){
+      currentUser=null;
+      currentUserEmail=null;
+      currentUserIsAdmin=false;
+      adminPassword='';
+      document.getElementById('dashboardContainer').style.display='none';
+      document.getElementById('authContainer').style.display='block';
+      document.getElementById('adminTabBtn').style.display='none';
+      showTab('login');
+      showMessage('👋 Logged out','success');
+    }
+    function showMessage(text,type){
+      const m=document.getElementById('message');
+      m.textContent=text;
+      m.className=`message ${type}`;
+      setTimeout(()=>m.className='message',4000);
+    }
+  </script>
+</body>
+</html>
